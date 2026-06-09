@@ -94,15 +94,6 @@ export default function EarnSection() {
 
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
-      <div>
-        <h2 className="text-sm font-semibold">Provide gas liquidity, earn swap fees</h2>
-        <p className="mt-1 text-xs text-sub">
-          Your MON pays the gas of gasless swappers. In exchange the vault collects{' '}
-          <span className="text-fg">0.3% of every swap</span> (in the swapped token) — fees accrue
-          to LPs pro rata, executors are reimbursed gas +10% from the pool.
-        </p>
-      </div>
-
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Vault MON" value={`${fmt(gasPool, 3)}`} />
         <Stat label="Fees collected" value={<FeeList functionName="totalFeesCollected" lp={null} />} accent="text-green" />
