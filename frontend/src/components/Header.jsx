@@ -1,8 +1,8 @@
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
+import ConnectMenu from './ConnectMenu'
 
 export default function Header() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
 
   return (
@@ -21,12 +21,7 @@ export default function Header() {
             {address.slice(0, 6)}…{address.slice(-4)}
           </button>
         ) : (
-          <button
-            onClick={() => connect({ connector: connectors[0] })}
-            className="rounded-md bg-fg px-3.5 py-1.5 text-xs font-medium text-bg transition hover:opacity-85"
-          >
-            Connect
-          </button>
+          <ConnectMenu />
         )}
       </div>
     </header>

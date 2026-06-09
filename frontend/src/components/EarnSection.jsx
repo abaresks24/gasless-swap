@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { formatEther, formatUnits, parseEther } from 'viem'
 import {
   useAccount,
-  useConnect,
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
 import { GASLESSSWAP_ADDRESS, USDC_ADDRESS, gaslessSwapAbi } from '../constants'
+import ConnectMenu from './ConnectMenu'
 
 function Stat({ label, value, accent }) {
   return (
@@ -20,7 +20,6 @@ function Stat({ label, value, accent }) {
 
 export default function EarnSection() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
   const [amount, setAmount] = useState('1')
   const [error, setError] = useState(null)
 
@@ -155,12 +154,7 @@ export default function EarnSection() {
           </div>
         </>
       ) : (
-        <button
-          onClick={() => connect({ connector: connectors[0] })}
-          className="rounded-xl bg-purple py-3 text-sm font-medium text-bg transition hover:opacity-90"
-        >
-          Connect
-        </button>
+        <ConnectMenu className="rounded-xl bg-purple py-3 text-sm font-medium text-bg transition hover:opacity-90 w-full" />
       )}
 
       {confirmed && (
