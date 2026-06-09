@@ -3,7 +3,6 @@ import Header from './components/Header'
 import SwapForm from './components/SwapForm'
 import EarnSection from './components/EarnSection'
 import RecentSwaps from './components/RecentSwaps'
-import HowItWorks from './components/HowItWorks'
 
 export default function App() {
   const [tab, setTab] = useState('swap')
@@ -36,14 +35,7 @@ export default function App() {
           ))}
         </div>
 
-        {tab === 'swap' ? (
-          <>
-            <SwapForm />
-            <HowItWorks />
-          </>
-        ) : (
-          <EarnSection />
-        )}
+        {tab === 'swap' ? <SwapForm /> : <EarnSection />}
         <RecentSwaps />
       </main>
     </div>

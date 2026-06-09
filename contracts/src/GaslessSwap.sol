@@ -79,6 +79,8 @@ contract GaslessSwap is EIP712, ReentrancyGuard, Ownable {
         bytes32 indexed intentHash,
         address indexed user,
         address indexed executor,
+        address tokenIn,
+        address tokenOut,
         uint256 amountIn,
         uint256 amountOut,
         uint256 lpFee,
@@ -162,6 +164,7 @@ contract GaslessSwap is EIP712, ReentrancyGuard, Ownable {
 
         emit IntentExecuted(
             intentHash, intent.user, msg.sender,
+            intent.tokenIn, intent.tokenOut,
             intent.amountIn, amountOut, lpFee, reimbursed
         );
     }

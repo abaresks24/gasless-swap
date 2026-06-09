@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react'
 import { formatUnits } from 'viem'
 import { usePublicClient, useWatchContractEvent } from 'wagmi'
-import { DEPLOY_BLOCK, EXPLORER_URL, GASLESSSWAP_ADDRESS, gaslessSwapAbi } from '../constants'
+import {
+  DEPLOY_BLOCK,
+  EXPLORER_URL,
+  GASLESSSWAP_ADDRESS,
+  gaslessSwapAbi,
+  tokenByAddress,
+} from '../constants'
+
+function fmt(amount, token) {
+  if (!token) return '?'
+  return `${Number(formatUnits(amount, token.decimals)).toLocaleString(undefined, { maximumFractionDigits: 5 })} ${token.symbol}`
+}
 
 function SwapRow({ swap }) {
   return (
@@ -9,14 +20,13 @@ function SwapRow({ swap }) {
       href={`${EXPLORER_URL}/tx/${swap.txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="animate-slide-in flex items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 text-xs transition hover:border-purple/40"
+      className="animate-slide-in flex items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 text-xs transition hover:border-fg/30"
     >
       <span className="font-mono text-sub">
         {swap.user.slice(0, 6)}…{swap.user.slice(-4)}
       </span>
       <span>
-        {Number(formatUnits(swap.amountIn, 6)).toLocaleString()} USDC →{' '}
-        {Number(formatUnits(swap.amountOut, 18)).toFixed(5)} wETH
+        {fmt(swap.amountIn, swap.tokenIn)} → {fmt(swap.amountOut, swap.tokenOut)}
       </span>
       <span className="text-sub">settled</span>
     </a>
@@ -36,6 +46,8 @@ export default function RecentSwaps() {
           id: `${log.transactionHash}-${log.logIndex}`,
           txHash: log.transactionHash,
           user: log.args.user,
+          tokenIn: tokenByAddress(log.args.tokenIn),
+          tokenOut: tokenByAddress(log.args.tokenOut),
           amountIn: log.args.amountIn,
           amountOut: log.args.amountOut,
         })
@@ -67,7 +79,7 @@ export default function RecentSwaps() {
 
   return (
     <section>
-      <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-sub">
+      <h2 className="px-1 text-xs font-medium uppercase tracking-wider text-sub">
         Recent swaps
       </h2>
       <div className="mt-2 flex flex-col gap-1.5">

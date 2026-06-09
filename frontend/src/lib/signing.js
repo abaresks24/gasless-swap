@@ -1,15 +1,9 @@
-import {
-  CHAIN_ID,
-  GASLESSSWAP_ADDRESS,
-  USDC_ADDRESS,
-  erc20Abi,
-  gaslessSwapAbi,
-} from '../constants'
+import { CHAIN_ID, GASLESSSWAP_ADDRESS, erc20Abi, gaslessSwapAbi } from '../constants'
 
-/** EIP-2612 permit signature: lets GaslessSwap pull `value` USDC. No gas. */
-export async function signPermit({ walletClient, publicClient, owner, value, deadline }) {
+/** EIP-2612 permit signature: lets GaslessSwap pull `value` of `token`. No gas. */
+export async function signPermit({ walletClient, publicClient, token, owner, value, deadline }) {
   const nonce = await publicClient.readContract({
-    address: USDC_ADDRESS,
+    address: token.address,
     abi: erc20Abi,
     functionName: 'nonces',
     args: [owner],
@@ -17,10 +11,10 @@ export async function signPermit({ walletClient, publicClient, owner, value, dea
   const signature = await walletClient.signTypedData({
     account: owner,
     domain: {
-      name: 'USD Coin', // must match MockUSDC.name() exactly
-      version: '1',
+      name: token.permit.name,
+      version: token.permit.version,
       chainId: CHAIN_ID,
-      verifyingContract: USDC_ADDRESS,
+      verifyingContract: token.address,
     },
     types: {
       Permit: [

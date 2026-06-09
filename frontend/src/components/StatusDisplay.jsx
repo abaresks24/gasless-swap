@@ -12,7 +12,7 @@ export default function StatusDisplay({ status, result, error }) {
   if (status === 'success') {
     return (
       <div className="animate-slide-in rounded-lg border border-line bg-bg p-3 text-sm">
-        <p className="font-medium">Swapped. You received {result.amountOut} wETH.</p>
+        <p className="font-medium">Swapped. You received {result.amountOut} {result.symbol}.</p>
         <p className="mt-1 text-xs text-sub">
           Gas paid by you: 0 MON ·{' '}
           <a

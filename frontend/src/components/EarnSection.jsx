@@ -6,7 +6,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
-import { GASLESSSWAP_ADDRESS, USDC_ADDRESS, gaslessSwapAbi } from '../constants'
+import { GASLESSSWAP_ADDRESS, TOKEN_LIST, gaslessSwapAbi } from '../constants'
 import ConnectMenu from './ConnectMenu'
 
 function Stat({ label, value, accent }) {
@@ -16,6 +16,29 @@ function Stat({ label, value, accent }) {
       <p className={`mt-0.5 text-sm font-semibold ${accent ?? ''}`}>{value}</p>
     </div>
   )
+}
+
+function useVaultRead(functionName, args = [], enabled = true) {
+  return useReadContract({
+    address: GASLESSSWAP_ADDRESS,
+    abi: gaslessSwapAbi,
+    functionName,
+    args,
+    query: { enabled, refetchInterval: 5000 },
+  }).data
+}
+
+function FeeList({ functionName, lp }) {
+  // one hook call per token, fixed order — fine for a static token list
+  const values = TOKEN_LIST.map((t) =>
+    useVaultRead(functionName, lp ? [lp, t.address] : [t.address], lp !== null)
+  )
+  const parts = TOKEN_LIST.map((t, i) => {
+    const v = values[i]
+    if (v === undefined || v === 0n) return null
+    return `${Number(formatUnits(v, t.decimals)).toLocaleString(undefined, { maximumFractionDigits: 5 })} ${t.symbol}`
+  }).filter(Boolean)
+  return parts.length ? parts.join(' · ') : '0'
 }
 
 export default function EarnSection() {
@@ -28,29 +51,14 @@ export default function EarnSection() {
     hash: txHash,
   })
 
-  const vaultRead = (functionName, args = []) => ({
-    address: GASLESSSWAP_ADDRESS,
-    abi: gaslessSwapAbi,
-    functionName,
-    args,
-    query: { refetchInterval: 4000 },
-  })
-
-  const { data: gasPool } = useReadContract(vaultRead('gasPool'))
-  const { data: totalGas } = useReadContract(vaultRead('totalGasReimbursed'))
-  const { data: totalFees } = useReadContract(vaultRead('totalFeesCollected', [USDC_ADDRESS]))
-  const { data: myShares } = useReadContract({
-    ...vaultRead('shares', [address]),
-    query: { enabled: !!address, refetchInterval: 4000 },
-  })
-  const { data: myValue } = useReadContract({
-    ...vaultRead('shareValue', [address]),
-    query: { enabled: !!address, refetchInterval: 4000 },
-  })
-  const { data: myFees } = useReadContract({
-    ...vaultRead('pendingFees', [address, USDC_ADDRESS]),
-    query: { enabled: !!address, refetchInterval: 4000 },
-  })
+  const gasPool = useVaultRead('gasPool')
+  const totalGas = useVaultRead('totalGasReimbursed')
+  const myShares = useVaultRead('shares', [address], !!address)
+  const myValue = useVaultRead('shareValue', [address], !!address)
+  const myPending = TOKEN_LIST.map((t) =>
+    useVaultRead('pendingFees', [address, t.address], !!address)
+  )
+  const hasPending = myPending.some((v) => v !== undefined && v > 0n)
 
   const act = (params) => {
     setError(null)
@@ -87,32 +95,26 @@ export default function EarnSection() {
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <div>
-        <h2 className="text-sm font-medium">Provide gas liquidity, earn swap fees</h2>
+        <h2 className="text-sm font-semibold">Provide gas liquidity, earn swap fees</h2>
         <p className="mt-1 text-xs text-sub">
           Your MON pays the gas of gasless swappers. In exchange the vault collects{' '}
-          <span className="text-fg">0.3% of every swap</span> — fees accrue to LPs pro rata, and
-          executors are reimbursed gas +10% from the pool.
+          <span className="text-fg">0.3% of every swap</span> (in the swapped token) — fees accrue
+          to LPs pro rata, executors are reimbursed gas +10% from the pool.
         </p>
       </div>
 
-      {/* protocol stats */}
       <div className="grid grid-cols-3 gap-2">
-        <Stat label="Vault MON" value={`${fmt(gasPool, 3)} MON`} />
-        <Stat
-          label="Fees collected"
-          value={totalFees === undefined ? '…' : `${Number(formatUnits(totalFees, 6)).toFixed(2)} USDC`}
-          accent="text-green"
-        />
-        <Stat label="Gas reimbursed" value={`${fmt(totalGas)} MON`} />
+        <Stat label="Vault MON" value={`${fmt(gasPool, 3)}`} />
+        <Stat label="Fees collected" value={<FeeList functionName="totalFeesCollected" lp={null} />} accent="text-green" />
+        <Stat label="Gas reimbursed" value={`${fmt(totalGas)}`} />
       </div>
 
-      {/* my position */}
       {isConnected && (
         <div className="grid grid-cols-2 gap-2">
           <Stat label="My position" value={`${fmt(myValue, 4)} MON`} />
           <Stat
             label="My claimable fees"
-            value={myFees === undefined ? '…' : `${Number(formatUnits(myFees, 6)).toFixed(4)} USDC`}
+            value={<FeeList functionName="pendingFees" lp={address} />}
             accent="text-green"
           />
         </div>
@@ -139,15 +141,15 @@ export default function EarnSection() {
           <div className="flex gap-2">
             <button
               onClick={claim}
-              disabled={busy || !myFees}
-              className="w-full rounded-xl border border-green/40 bg-green/10 py-2.5 text-sm font-semibold text-green transition hover:bg-green/20 disabled:opacity-40"
+              disabled={busy || !hasPending}
+              className="w-full rounded-xl border border-green/40 bg-green/10 py-2.5 text-sm font-medium text-green transition hover:bg-green/20 disabled:opacity-40"
             >
               Claim fees
             </button>
             <button
               onClick={withdraw}
               disabled={busy || !myShares}
-              className="w-full rounded-xl border border-line bg-bg py-2.5 text-sm font-semibold text-sub transition hover:text-fg disabled:opacity-40"
+              className="w-full rounded-xl border border-line bg-bg py-2.5 text-sm font-medium text-sub transition hover:text-fg disabled:opacity-40"
             >
               Withdraw all
             </button>
@@ -158,16 +160,11 @@ export default function EarnSection() {
       )}
 
       {confirmed && (
-        <p className="animate-slide-in text-center text-xs font-semibold text-green">
+        <p className="animate-slide-in text-center text-xs font-medium text-green">
           Transaction confirmed
         </p>
       )}
       {error && <p className="text-center text-xs text-red-400">{error}</p>}
-
-      <p className="text-center text-[11px] text-sub">
-        LP economics: a 100 USDC swap earns the vault 0.30 USDC and costs ~0.06 MON of gas — the
-        0.1% minimum fee is enforced on-chain.
-      </p>
     </section>
   )
 }
